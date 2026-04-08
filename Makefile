@@ -12,6 +12,7 @@ sync:
 	@cp merview/favicon.png $(WEB)/favicon.png
 	@echo "Applying offline patches..."
 	@cd $(WEB) && patch -p1 --forward < ../../../patches/themes-offline.patch || true
+	@cd $(WEB) && patch -p1 --forward < ../../../patches/fullscreen-fixes.patch || true
 	@echo "Sync complete."
 
 ## Download vendor libraries (CDN deps bundled for offline use)

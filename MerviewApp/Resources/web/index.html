@@ -452,25 +452,6 @@
             min-height: 0;
         }
 
-        .site-footer {
-            background: #1a252f;
-            color: rgba(255, 255, 255, 0.5);
-            padding: 6px 20px;
-            font-size: 11px;
-            text-align: center;
-            flex-shrink: 0;
-            user-select: none;
-        }
-
-        .site-footer a {
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-        }
-
-        .site-footer a:hover {
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: underline;
-        }
 
         .editor-panel, .preview-panel {
             flex: 1;
@@ -763,7 +744,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(255, 255, 255, 0.98);
+            background: rgba(255, 255, 255, 1);
             z-index: 9999;
             display: flex;
             flex-direction: column;
@@ -811,6 +792,7 @@
             transition: none;
             max-width: 100%;
             max-height: 100%;
+            background-color: transparent !important;
         }
 
         .mermaid-fullscreen-overlay .edgeLabel text {
@@ -1137,7 +1119,7 @@
                 color-adjust: exact !important;
             }
 
-            .toolbar, .editor-panel, .panel-header, .resize-handle, .status, .lint-panel, .site-footer, .native-sidebar {
+            .toolbar, .editor-panel, .panel-header, .resize-handle, .status, .lint-panel, .native-sidebar {
                 display: none !important;
             }
 
@@ -1392,9 +1374,6 @@
         </div>
     </div>
 
-    <footer class="site-footer" role="contentinfo">
-        <span>&copy; 2025 <a href="https://github.com/mickdarling" target="_blank" rel="noopener noreferrer">Mick Darling</a>. Open source under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer">AGPL-3.0</a>. Desktop wrapper app.</span>
-    </footer>
 
     <div class="status" id="status"></div>
 
