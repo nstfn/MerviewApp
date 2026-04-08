@@ -75,39 +75,34 @@ class MerviewViewModel: ObservableObject {
     private func watchFile(_ url: URL) {
         stopWatching()
 
-        fileDescriptor = open(url.path, O_EVTONLY)
-        guard fileDescriptor >= 0 else { return }
+        let fd = open(url.path, O_EVTONLY)
+        guard fd >= 0 else { return }
+        fileDescriptor = fd
 
         let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: fileDescriptor,
-            eventMask: [.write, .rename],
+            fileDescriptor: fd,
+            eventMask: [.write, .rename, .delete],
             queue: .main
         )
 
         source.setEventHandler { [weak self] in
             guard let self = self, let currentFile = self.currentFile else { return }
-            let eventFlags = source.data
             // Small delay to let the write finish (editors do atomic saves)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                // Re-read and re-inject
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 if let content = try? String(contentsOf: currentFile, encoding: .utf8) {
                     self.pendingContent = (content, currentFile.lastPathComponent)
                     self.onWebViewReady?()
                 }
-                // After a rename (atomic save), the file descriptor points to the
-                // old inode — re-watch so we keep getting events for future saves
-                if eventFlags.contains(.rename) {
-                    self.watchFile(currentFile)
-                }
+                // Always re-watch: any event can leave the FD stale
+                // (atomic rename, delete+create, etc.)
+                self.watchFile(currentFile)
             }
         }
 
-        source.setCancelHandler { [weak self] in
-            guard let self = self else { return }
-            if self.fileDescriptor >= 0 {
-                close(self.fileDescriptor)
-                self.fileDescriptor = -1
-            }
+        // Capture fd by value so the cancel handler closes the correct
+        // descriptor even if watchFile() has already opened a new one
+        source.setCancelHandler {
+            close(fd)
         }
 
         source.resume()
