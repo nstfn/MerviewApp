@@ -1,0 +1,34 @@
+name: MerviewApp
+options:
+  bundleIdPrefix: com.merview
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+targets:
+  MerviewApp:
+    type: application
+    platform: macOS
+    sources:
+      - path: MerviewApp
+        excludes:
+          - "Resources/**"
+      - path: MerviewApp/Resources/web
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.merview.desktop
+        PRODUCT_NAME: Merview
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Merview
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.developer-tools"
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright 2025 Mick Darling (Merview). Desktop wrapper."
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_USER_SELECTED_FILES: readwrite

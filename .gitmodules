@@ -1,0 +1,3 @@
+[submodule "merview"]
+	path = merview
+	url = https://github.com/nstfn/merview.git

@@ -1,0 +1,35 @@
+--- a/js/themes.js	2026-04-08 11:59:25
++++ b/js/themes.js	2026-04-08 11:59:47
+@@ -1327,12 +1327,7 @@
+         return;
+     }
+ 
+-    // Verify theme has SRI hash for security
+-    const sriHash = syntaxThemeSRI[theme.file];
+-    if (!sriHash) {
+-        console.error(`No SRI hash for theme: ${theme.file}`);
+-        return;
+-    }
++    // SRI check skipped in offline desktop mode (local files are trusted)
+ 
+     // Mark as loading
+     syntaxThemeLoading = true;
+@@ -1341,15 +1336,12 @@
+     const oldThemeLink = state.currentSyntaxThemeLink;
+ 
+     try {
+-        // Fetch the CSS content first to verify SRI and wrap in layer
+-        const cdnUrl = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${theme.file}.min.css`;
++        // Offline: load from bundled vendor directory instead of CDN
++        const localUrl = `vendor/hljs-themes/${theme.file}.min.css`;
+ 
+         // Load new theme FIRST (Issue #376 fix)
+         // Keep old theme in place during load to prevent flicker
+-        const response = await fetch(cdnUrl, {
+-            integrity: sriHash,
+-            mode: 'cors'
+-        });
++        const response = await fetch(localUrl);
+ 
+         if (!response.ok) {
+             throw new Error(`HTTP ${response.status}`);

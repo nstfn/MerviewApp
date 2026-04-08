@@ -1,0 +1,1467 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2025 Mick Darling -->
+<!-- Offline version bundled for MerviewApp macOS wrapper -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merview - Mermaid + Markdown Viewer</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
+
+    <!-- Libraries (local offline copies) -->
+    <script src="vendor/marked.min.js"></script>
+    <script src="vendor/mermaid.min.js"></script>
+    <script src="vendor/purify.min.js"></script>
+    <script src="vendor/highlight.min.js"></script>
+
+    <!-- CodeMirror 5 (local offline copies) -->
+    <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css">
+    <script src="vendor/codemirror/codemirror.min.js"></script>
+    <script src="vendor/codemirror/mode/markdown.min.js"></script>
+    <script src="vendor/codemirror/mode/gfm.min.js"></script>
+    <script src="vendor/codemirror/mode/javascript.min.js"></script>
+    <script src="vendor/codemirror/mode/xml.min.js"></script>
+    <script src="vendor/codemirror/mode/css.min.js"></script>
+    <script src="vendor/codemirror/mode/yaml.min.js"></script>
+    <script src="vendor/codemirror/mode/python.min.js"></script>
+    <script src="vendor/codemirror/addon/continuelist.min.js"></script>
+    <script src="vendor/codemirror/addon/overlay.min.js"></script>
+    <!-- Custom mode for Markdown with YAML front matter -->
+    <script src="js/editor-modes/markdown-yaml.js"></script>
+
+    <style>
+        @layer base, preview-styles, syntax-theme, mermaid-theme;
+
+        @layer base {
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            background: #2c3e50;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        .toolbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-home-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            border-radius: 4px;
+            padding: 4px 8px;
+            margin: -4px -8px;
+            transition: background-color 0.15s ease;
+        }
+
+        .brand-home-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .brand-home-link:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: 2px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .brand-home-link:active {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .brand-logo {
+            height: 28px;
+            width: auto;
+        }
+
+        .toolbar h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .brand-tagline {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            border-left: 1px solid rgba(255, 255, 255, 0.3);
+            padding-left: 12px;
+        }
+
+        .github-link {
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.2s;
+        }
+
+        .github-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .github-label {
+            font-size: 12px;
+        }
+
+        .toolbar-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .style-selector {
+            background: #34495e;
+            color: white;
+            border: 1px solid #4a6278;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .style-selector:hover {
+            background: #415b76;
+        }
+
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+            min-width: auto;
+        }
+
+        .sessions-stats {
+            margin-bottom: 16px;
+            padding: 10px;
+            background: #1a252f;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #95a5a6;
+        }
+
+        .sessions-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .sessions-empty {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 24px;
+            font-style: italic;
+        }
+
+        .session-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #34495e;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .session-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .session-item-active {
+            border-left: 3px solid #27ae60;
+            padding-left: 9px;
+        }
+
+        .session-info {
+            flex: 1;
+            min-width: 0;
+            margin-right: 12px;
+        }
+
+        .session-name {
+            font-weight: 600;
+            color: #ecf0f1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .session-active-badge {
+            font-weight: normal;
+            color: #27ae60;
+            font-size: 12px;
+        }
+
+        .session-meta {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 2px;
+        }
+
+        .session-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .gist-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            border: none;
+            padding: 0;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .gist-modal-overlay[open] {
+            display: flex;
+        }
+
+        .gist-modal-overlay::backdrop {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .gist-modal {
+            background: #2c3e50;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            color: white;
+        }
+
+        .gist-modal h2 {
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            color: #ecf0f1;
+        }
+
+        .gist-modal p {
+            margin: 0 0 16px 0;
+            color: #bdc3c7;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .gist-modal .device-code {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            background: #1a252f;
+            padding: 16px 24px;
+            border-radius: 6px;
+            margin: 16px 0;
+            color: #3498db;
+            user-select: all;
+        }
+
+        .gist-modal .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .gist-modal .btn {
+            min-width: 120px;
+        }
+
+        .gist-modal .btn-github {
+            background: #333;
+        }
+
+        .gist-modal .btn-github:hover {
+            background: #444;
+        }
+
+        .gist-modal .status-text {
+            font-size: 13px;
+            color: #95a5a6;
+            margin-top: 12px;
+        }
+
+        .gist-modal .status-text.success {
+            color: #27ae60;
+        }
+
+        .gist-modal .status-text.error {
+            color: #e74c3c;
+        }
+
+        .gist-modal .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #3498db;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .gist-modal .url-display {
+            background: #1a252f;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 16px 0;
+            word-break: break-all;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-size: 12px;
+            color: #3498db;
+            user-select: all;
+        }
+
+        .private-url-modal .security-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .private-url-modal .option-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .private-url-modal .option-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            background: #1a252f;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .private-url-modal .option-btn:hover {
+            background: #2c3e50;
+            border-color: #5dade2;
+        }
+
+        .private-url-modal .option-btn .option-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .private-url-modal .option-btn .option-desc {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+
+        .private-url-modal .option-btn.primary {
+            border-color: #27ae60;
+        }
+
+        .private-url-modal .option-btn.primary:hover {
+            border-color: #2ecc71;
+        }
+
+        .private-url-modal .learn-more-container {
+            margin: 8px 0 12px 0;
+            font-size: 12px;
+        }
+
+        .private-url-modal .learn-more-link {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .site-footer {
+            background: #1a252f;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 6px 20px;
+            font-size: 11px;
+            text-align: center;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .site-footer a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+        }
+
+        .site-footer a:hover {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: underline;
+        }
+
+        .editor-panel, .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+
+        .resize-handle {
+            width: 8px;
+            background: #34495e;
+            cursor: col-resize;
+            position: relative;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        .resize-handle:hover {
+            background: #3498db;
+        }
+
+        .resize-handle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 44px;
+            height: 100%;
+        }
+
+        .resize-handle::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 3px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            pointer-events: none;
+        }
+
+        .panel-header {
+            background: #34495e;
+            color: white;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-selectors {
+            display: flex;
+            gap: 8px;
+        }
+
+        .panel-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-selector {
+            background: #2c3e50;
+            color: white;
+            border: 1px solid #4a6278;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .panel-selector:hover {
+            background: #415b76;
+        }
+
+        .panel-selector:focus {
+            outline: 2px solid #3498db;
+            outline-offset: 1px;
+        }
+
+        #editor-container {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #editor-container .CodeMirror {
+            height: 100%;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        #editor-container.drag-over {
+            outline: 2px dashed #3498db;
+            outline-offset: -2px;
+        }
+
+        .preview-panel {
+            background: white;
+            border-left: 1px solid #ddd;
+            position: relative;
+        }
+
+        #preview {
+            flex: 1 !important;
+            overflow-y: auto !important;
+            background: white;
+            display: block !important;
+            position: relative !important;
+            width: auto !important;
+            max-width: none !important;
+            margin: 0 !important;
+            font-family: initial !important;
+            font-size: initial !important;
+            line-height: initial !important;
+            color: initial !important;
+        }
+
+        #wrapper {
+            display: block;
+            padding: 20px;
+        }
+
+        .mermaid-container {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .mermaid {
+            text-align: center;
+        }
+
+        #wrapper .mermaid,
+        .mermaid {
+            line-height: 1;
+            font-size: 1rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            letter-spacing: normal;
+            word-spacing: normal;
+            text-transform: none;
+            font-style: normal;
+            font-weight: normal;
+        }
+
+        #wrapper .mermaid *::first-letter,
+        .mermaid *::first-letter {
+            float: none !important;
+            font-size: inherit !important;
+            line-height: inherit !important;
+            margin: 0 !important;
+            font-weight: inherit !important;
+        }
+
+        #wrapper .mermaid foreignObject *,
+        .mermaid foreignObject * {
+            font-size: inherit !important;
+            font-family: inherit !important;
+            font-weight: normal !important;
+            font-style: normal !important;
+            letter-spacing: normal !important;
+            word-spacing: normal !important;
+            text-transform: none !important;
+            line-height: 1.2 !important;
+        }
+
+        #wrapper .mermaid .edgeLabel rect,
+        .mermaid .edgeLabel rect {
+            opacity: 1 !important;
+        }
+
+        #wrapper .mermaid .edgeLabel text,
+        .mermaid .edgeLabel text {
+            fill: #000 !important;
+        }
+
+        #wrapper .mermaid .edgeLabel rect.background,
+        .mermaid .edgeLabel rect.background,
+        #wrapper .mermaid .edgeLabel rect,
+        .mermaid .edgeLabel rect {
+            fill: rgba(255, 255, 255, 0.85) !important;
+        }
+
+        .mermaid-loading {
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px dashed rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .mermaid-loading::before {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(52, 152, 219, 0.3);
+            border-top-color: #3498db;
+            border-radius: 50%;
+            animation: mermaid-spinner 0.8s linear infinite;
+            will-change: transform;
+        }
+
+        .mermaid-loading::after {
+            content: 'Loading diagram...';
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.5);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        @keyframes mermaid-spinner {
+            to { transform: rotate(360deg); }
+        }
+
+        .mermaid-error .mermaid-error-details {
+            color: #b91c1c;
+            padding: 8px;
+            border: 1px solid #fca5a5;
+            border-radius: 4px;
+            background: #fef2f2;
+            text-align: left;
+        }
+
+        .mermaid-error .mermaid-error-details summary {
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .mermaid-error .mermaid-error-message {
+            margin-top: 8px;
+            padding: 8px;
+            background: #fff;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+
+        #wrapper .mermaid svg,
+        #wrapper .mermaid svg text,
+        #wrapper .mermaid svg tspan,
+        .mermaid svg,
+        .mermaid svg text,
+        .mermaid svg tspan {
+            line-height: 1;
+            letter-spacing: normal;
+            word-spacing: normal;
+            text-transform: none;
+        }
+
+        .mermaid-expand-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(52, 73, 94, 0.8);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .mermaid-container:hover .mermaid-expand-btn {
+            opacity: 1;
+        }
+
+        .mermaid-expand-btn:hover {
+            background: rgba(52, 152, 219, 0.9);
+        }
+
+        .mermaid-fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .mermaid-fullscreen-overlay .mermaid-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .mermaid-fullscreen-overlay .mermaid-close-btn:hover {
+            background: #c0392b;
+        }
+
+        .mermaid-fullscreen-overlay .mermaid-fullscreen-content {
+            width: 95vw;
+            height: 85vh;
+            overflow: hidden;
+            cursor: grab;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mermaid-fullscreen-overlay .mermaid-fullscreen-content:active {
+            cursor: grabbing;
+        }
+
+        .mermaid-fullscreen-overlay .mermaid-fullscreen-content svg {
+            transform-origin: center center;
+            transition: none;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .mermaid-fullscreen-overlay .edgeLabel text {
+            fill: #000 !important;
+        }
+
+        .mermaid-fullscreen-overlay .edgeLabel rect.background,
+        .mermaid-fullscreen-overlay .edgeLabel rect {
+            fill: rgba(255, 255, 255, 0.85) !important;
+        }
+
+        .mermaid-container .mermaid {
+            cursor: zoom-in;
+        }
+
+        .mermaid-fullscreen-overlay .mermaid-zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(52, 73, 94, 0.9);
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        .mermaid-fullscreen-overlay .mermaid-zoom-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .mermaid-fullscreen-overlay .mermaid-zoom-btn:hover {
+            background: #2980b9;
+        }
+
+        .mermaid-fullscreen-overlay .mermaid-zoom-level {
+            color: white;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            min-width: 50px;
+            justify-content: center;
+        }
+
+        .yaml-front-matter {
+            margin: 20px 0 !important;
+            border: 1px solid rgba(0,0,0,0.15) !important;
+            border-radius: 6px !important;
+            background: rgba(0,0,0,0.02) !important;
+            overflow: hidden !important;
+        }
+
+        .yaml-front-matter summary {
+            padding: 12px 16px !important;
+            cursor: pointer !important;
+            font-weight: 600 !important;
+            background: rgba(0,0,0,0.05) !important;
+            user-select: none !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            transition: background 0.2s !important;
+        }
+
+        .yaml-front-matter summary:hover {
+            background: rgba(0,0,0,0.08) !important;
+        }
+
+        .yaml-front-matter .yaml-icon {
+            font-size: 14px !important;
+        }
+
+        .yaml-front-matter table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin: 0 !important;
+            font-size: 14px !important;
+        }
+
+        .yaml-front-matter table td {
+            padding: 8px 12px !important;
+            vertical-align: top !important;
+            border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+        }
+
+        .yaml-front-matter table td:first-child {
+            font-weight: 600 !important;
+            width: 30% !important;
+        }
+
+        .yaml-front-matter table tr:last-child td {
+            border-bottom: none !important;
+        }
+
+        .yaml-front-matter ul {
+            margin: 0 !important;
+            padding-left: 20px !important;
+        }
+
+        .status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .status.show {
+            opacity: 1;
+        }
+
+        .status.warning {
+            background: #e67e22;
+        }
+
+        .status.error {
+            background: #e74c3c;
+        }
+
+        .lint-panel {
+            position: fixed;
+            bottom: -300px;
+            left: 0;
+            right: 0;
+            height: 300px;
+            background: #2c3e50;
+            border-top: 2px solid #3498db;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+            transition: bottom 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lint-panel.show {
+            bottom: 0;
+        }
+
+        .lint-header {
+            background: #34495e;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .lint-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 5px;
+            line-height: 1;
+        }
+
+        .lint-close:hover {
+            color: #e74c3c;
+        }
+
+        .lint-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 20px;
+            color: #ecf0f1;
+        }
+
+        .lint-empty {
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        .lint-issue {
+            background: #34495e;
+            border-left: 4px solid #e74c3c;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .lint-issue.warning {
+            border-left-color: #f39c12;
+        }
+
+        .lint-issue-header {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lint-issue-type {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: #e74c3c;
+            color: white;
+        }
+
+        .lint-issue.warning .lint-issue-type {
+            background: #f39c12;
+        }
+
+        .lint-issue-message {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .lint-issue-location {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 5px;
+        }
+
+        #lintToggle.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            clip-path: inset(50%);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* Native file sidebar for folder browsing */
+        .native-sidebar {
+            width: 220px;
+            background: #1a252f;
+            color: #ecf0f1;
+            border-right: 1px solid #34495e;
+            display: none;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .native-sidebar.visible {
+            display: flex;
+        }
+
+        .native-sidebar-header {
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #95a5a6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #34495e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .native-sidebar-close {
+            background: none;
+            border: none;
+            color: #95a5a6;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .native-sidebar-close:hover {
+            color: #ecf0f1;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .native-sidebar-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 0;
+        }
+
+        .native-sidebar-item {
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background 0.15s;
+        }
+
+        .native-sidebar-item:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .native-sidebar-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        @media print {
+            *, *::before, *::after {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            .toolbar, .editor-panel, .panel-header, .resize-handle, .status, .lint-panel, .site-footer, .native-sidebar {
+                display: none !important;
+            }
+
+            .container {
+                display: block !important;
+                height: auto !important;
+            }
+
+            .preview-panel {
+                border: none !important;
+                width: 100% !important;
+            }
+
+            #preview {
+                overflow: visible !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: none !important;
+                font-family: inherit !important;
+                font-size: inherit !important;
+                line-height: inherit !important;
+                color: inherit !important;
+            }
+
+            #wrapper {
+                display: block !important;
+                padding: 20px !important;
+            }
+
+            #wrapper pre,
+            #wrapper code,
+            #wrapper pre code,
+            #wrapper .hljs,
+            #wrapper .hljs * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            #wrapper pre code.hljs {
+                display: block !important;
+                padding: 1em !important;
+            }
+
+            .mermaid, img, svg, table, blockquote, pre {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            img, svg {
+                max-width: 100%;
+                height: auto;
+            }
+
+            #wrapper [style*="page-break-before: always"],
+            #wrapper .page-break-before {
+                page-break-before: always;
+                break-before: page;
+            }
+
+            #wrapper [style*="page-break-after: always"],
+            #wrapper .page-break-after {
+                page-break-after: always;
+                break-after: page;
+            }
+
+            #wrapper [style*="page-break-inside: avoid"],
+            #wrapper .page-break-avoid {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            #wrapper h1, #wrapper h2, #wrapper h3,
+            #wrapper h4, #wrapper h5, #wrapper h6 {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <header class="toolbar-brand" aria-label="Merview application branding">
+            <a href="/?sample" class="brand-home-link" id="brandHomeLink" title="Load welcome document" aria-label="Merview home - load welcome document">
+                <img src="images/logo.png" alt="" class="brand-logo" aria-hidden="true">
+                <h1>Merview</h1>
+            </a>
+            <span class="brand-tagline">Offline Desktop Edition</span>
+        </header>
+        <div class="toolbar-buttons">
+            <button class="btn btn-success" onclick="nativeSaveFile()">Save</button>
+            <button class="btn btn-success" onclick="nativeSavePDF()">Save as PDF</button>
+            <button class="btn" onclick="loadWelcomePage()">Welcome</button>
+            <button class="btn" id="lintToggle" onclick="toggleLintPanel()">Code Validation</button>
+            <button class="btn btn-danger" onclick="clearEditor()">Clear</button>
+        </div>
+    </div>
+
+    <div class="lint-panel" id="lintPanel">
+        <div class="lint-header">
+            <span>Code Validation Issues</span>
+            <button class="lint-close" onclick="toggleLintPanel()">&#x2715;</button>
+        </div>
+        <div class="lint-content" id="lintContent">
+            <p class="lint-empty">No issues found or validation disabled.</p>
+        </div>
+    </div>
+
+    <dialog class="gist-modal-overlay" id="gistModal" aria-labelledby="gistModalTitle">
+        <div class="gist-modal">
+            <h2 id="gistModalTitle">Share to Gist</h2>
+            <div id="gistModalContent"></div>
+        </div>
+    </dialog>
+
+    <dialog class="gist-modal-overlay" id="privateUrlModal" aria-labelledby="privateUrlModalTitle" aria-describedby="privateUrlModalDesc">
+        <div class="gist-modal private-url-modal">
+            <div class="security-icon" aria-hidden="true">&#x1F512;</div>
+            <h2 id="privateUrlModalTitle">Private Repository Detected</h2>
+            <p id="privateUrlModalDesc">This URL contains a private access token. To protect your security, choose how you'd like to proceed:</p>
+            <div class="option-buttons">
+                <button class="option-btn" data-action="view-local" type="button" aria-label="View Locally Only">
+                    <span class="option-title">View Locally Only</span>
+                    <span class="option-desc">Render content without a shareable URL</span>
+                </button>
+                <button class="option-btn primary" data-action="share-gist" type="button" aria-label="Share Securely via Gist">
+                    <span class="option-title">Share Securely via Gist</span>
+                    <span class="option-desc">Create a safe, shareable copy</span>
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog class="gist-modal-overlay" id="urlModal" aria-labelledby="urlModalTitle" aria-describedby="urlModalDesc urlModalContextDesc">
+        <div class="gist-modal">
+            <h2 id="urlModalTitle">Load from URL</h2>
+            <p id="urlModalDesc">Enter the URL of the file to load:</p>
+            <span id="urlModalContextDesc" class="visually-hidden">This will load a custom CSS stylesheet from an external URL</span>
+            <input type="url" id="urlInput"
+                   placeholder="https://raw.githubusercontent.com/user/repo/main/style.css"
+                   style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #4a6278; background: #1a252f; color: white; font-size: 14px; margin: 0 0 8px 0; box-sizing: border-box;">
+            <div id="urlModalError" role="alert" aria-live="polite" style="display: none; color: #e74c3c; font-size: 13px; margin: 0 0 12px 0;"></div>
+            <div style="margin: 0 0 16px 0;">
+                <p style="font-size: 13px; color: #95a5a6; margin: 0 0 8px 0;">Allowed sources:</p>
+                <ul id="urlModalDomains" style="list-style: disc; padding: 0 0 0 20px; margin: 0; font-size: 12px; color: #7f8c8d;"></ul>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn" id="urlModalCancel" type="button">Cancel</button>
+                <button class="btn btn-success" id="urlModalLoad" type="button">Load</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog class="gist-modal-overlay" id="sessionsModal" aria-labelledby="sessionsModalTitle">
+        <div class="gist-modal" style="max-width: 550px;">
+            <h2 id="sessionsModalTitle">Manage Sessions</h2>
+            <div id="sessionsModalContent">
+                <div class="sessions-stats">
+                    <span id="sessionsStorageInfo">0 sessions (0 B of 5 MB)</span>
+                </div>
+                <div id="sessionsList" class="sessions-list"></div>
+                <div class="modal-buttons" style="margin-top: 16px;">
+                    <button class="btn btn-danger" id="clearAllSessionsBtn" type="button">Clear All</button>
+                    <button class="btn" id="closeSessionsModalBtn" type="button">Close</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <div class="container">
+        <!-- Native file sidebar for folder browsing -->
+        <div class="native-sidebar" id="nativeSidebar">
+            <div class="native-sidebar-header">
+                <span id="sidebarTitle">Files</span>
+                <button class="native-sidebar-close" onclick="document.getElementById('nativeSidebar').classList.remove('visible')">&#x2715;</button>
+            </div>
+            <div class="native-sidebar-list" id="sidebarFileList"></div>
+        </div>
+
+        <div class="editor-panel">
+            <div class="panel-header">
+                <div class="panel-title-group">
+                    <span>Editor</span>
+                    <select class="panel-selector" id="documentSelector" title="Current document">
+                        <optgroup label="Current Document">
+                            <option value="">Document...</option>
+                        </optgroup>
+                    </select>
+                    <select class="panel-selector" id="symbolsSelector" onchange="insertSpecialCharacter(this.value)" title="Insert Mermaid snippets and special characters" aria-label="Insert Mermaid snippet">
+                        <optgroup label="Mermaid Block">
+                            <option value="">Mermaid Snippet...</option>
+                            <option value="```mermaid&#10;&#10;```">``` mermaid block</option>
+                        </optgroup>
+                        <optgroup label="Diagram Types">
+                            <option value="graph LR&#10;    ">graph LR</option>
+                            <option value="graph TD&#10;    ">graph TD</option>
+                            <option value="flowchart LR&#10;    ">flowchart LR</option>
+                            <option value="flowchart TD&#10;    ">flowchart TD</option>
+                            <option value="sequenceDiagram&#10;    ">sequenceDiagram</option>
+                            <option value="classDiagram&#10;    ">classDiagram</option>
+                            <option value="stateDiagram-v2&#10;    ">stateDiagram</option>
+                            <option value="erDiagram&#10;    ">erDiagram</option>
+                            <option value="gantt&#10;    ">gantt</option>
+                            <option value="pie&#10;    ">pie chart</option>
+                            <option value="gitGraph&#10;    ">gitGraph</option>
+                            <option value="mindmap&#10;    ">mindmap</option>
+                            <option value="timeline&#10;    ">timeline</option>
+                        </optgroup>
+                        <optgroup label="Arrows">
+                            <option value="-->">&rarr; --&gt; solid arrow</option>
+                            <option value="---">--- solid line</option>
+                            <option value="-.->">&rarr; -.-&gt; dotted arrow</option>
+                            <option value="==>">&rArr; ==&gt; thick arrow</option>
+                            <option value="<-->">&harr; &lt;--&gt; bidirectional</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <select class="panel-selector" id="editorThemeSelector" onchange="changeEditorTheme(this.value)" title="Editor syntax highlighting">
+                    <optgroup label="Editor Theme">
+                        <option value="">Theme...</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div id="editor-container">
+                <textarea id="editor"></textarea>
+            </div>
+        </div>
+
+        <div class="resize-handle" id="resizeHandle"></div>
+
+        <div class="preview-panel">
+            <div class="panel-header">
+                <span>Preview</span>
+                <div class="panel-selectors">
+                    <select class="panel-selector" id="styleSelector" onchange="changeStyle(this.value)" title="Document style">
+                        <optgroup label="Preview Style">
+                            <option value="">Style...</option>
+                        </optgroup>
+                    </select>
+                    <select class="panel-selector" id="syntaxThemeSelector" onchange="changeSyntaxTheme(this.value)" title="Code block theme">
+                        <optgroup label="Code Block Theme">
+                            <option value="">Code...</option>
+                        </optgroup>
+                    </select>
+                    <select class="panel-selector" id="mermaidThemeSelector" onchange="changeMermaidTheme(this.value)" title="Mermaid diagram theme">
+                        <optgroup label="Mermaid Theme">
+                            <option value="">Diagram...</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+            <div id="preview">
+                <div id="wrapper"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <span>&copy; 2025 <a href="https://github.com/mickdarling" target="_blank" rel="noopener noreferrer">Mick Darling</a>. Open source under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer">AGPL-3.0</a>. Desktop wrapper app.</span>
+    </footer>
+
+    <div class="status" id="status"></div>
+
+    <script type="module" src="js/main.js"></script>
+
+    <!-- Native app bridge: allows Swift to inject content, file lists, and handle save/PDF -->
+    <script>
+        window.nativeBridge = {
+            loadContent: function(content, filename) {
+                function tryLoad() {
+                    if (typeof setEditorContent === 'function' && typeof state !== 'undefined' && state.cmEditor) {
+                        setEditorContent(content);
+                        state.currentFilename = filename || null;
+                        state.loadedFromURL = null;
+                        state.lastRenderedContent = null;
+                        var isMermaid = /\.(mermaid|mmd)$/i.test(filename || '');
+                        if (typeof DOCUMENT_MODE !== 'undefined') {
+                            state.documentMode = isMermaid ? DOCUMENT_MODE.MERMAID : DOCUMENT_MODE.MARKDOWN;
+                        }
+                        if (typeof updateDocumentSelector === 'function') updateDocumentSelector();
+                        if (typeof renderMarkdown === 'function') renderMarkdown();
+                        if (typeof showStatus === 'function') showStatus('Loaded: ' + (filename || 'file'));
+                    } else {
+                        setTimeout(tryLoad, 100);
+                    }
+                }
+                tryLoad();
+            },
+            showFileList: function(filesJson) {
+                var files = JSON.parse(filesJson);
+                var sidebar = document.getElementById('nativeSidebar');
+                var list = document.getElementById('sidebarFileList');
+                list.innerHTML = '';
+                files.forEach(function(f) {
+                    var item = document.createElement('div');
+                    item.className = 'native-sidebar-item';
+                    item.textContent = f;
+                    item.addEventListener('click', function() {
+                        document.querySelectorAll('.native-sidebar-item').forEach(function(el) { el.classList.remove('active'); });
+                        item.classList.add('active');
+                        window.webkit.messageHandlers.nativeApp.postMessage(JSON.stringify({action: 'openFile', path: f}));
+                    });
+                    list.appendChild(item);
+                });
+                sidebar.classList.add('visible');
+            }
+        };
+
+        // Native save: sends editor content to Swift for NSSavePanel
+        function nativeSaveFile() {
+            var content = '';
+            var filename = 'untitled.md';
+            if (typeof getEditorContent === 'function') content = getEditorContent();
+            if (typeof state !== 'undefined' && state.currentFilename) filename = state.currentFilename;
+            window.webkit.messageHandlers.nativeApp.postMessage(JSON.stringify({
+                action: 'save', content: content, filename: filename
+            }));
+        }
+
+        // Native PDF: tells Swift to capture the web view as PDF
+        function nativeSavePDF() {
+            window.webkit.messageHandlers.nativeApp.postMessage(JSON.stringify({action: 'savePDF'}));
+        }
+    </script>
+</body>
+</html>
