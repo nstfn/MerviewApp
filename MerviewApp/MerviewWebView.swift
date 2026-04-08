@@ -12,6 +12,9 @@ struct MerviewWebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
 
+        // Use a persistent data store so localStorage survives across launches
+        config.websiteDataStore = .default()
+
         // Register custom scheme handler so fetch() works for local files
         let schemeHandler = LocalFileSchemeHandler()
         config.setURLSchemeHandler(schemeHandler, forURLScheme: "app")
