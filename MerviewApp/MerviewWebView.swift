@@ -80,6 +80,34 @@ struct MerviewWebView: NSViewRepresentable {
             }
         }
 
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            guard let url = navigationAction.request.url else {
+                decisionHandler(.allow)
+                return
+            }
+
+            // Allow our custom app:// scheme (local bundled content)
+            if url.scheme == "app" {
+                decisionHandler(.allow)
+                return
+            }
+
+            // Allow fragment-only navigations (anchor links within the document)
+            if url.scheme == "about" || url.absoluteString.hasPrefix("about:") {
+                decisionHandler(.allow)
+                return
+            }
+
+            // External link (http, https, mailto, etc.) → open in system browser
+            if let scheme = url.scheme, ["http", "https", "mailto"].contains(scheme) {
+                NSWorkspace.shared.open(url)
+                decisionHandler(.cancel)
+                return
+            }
+
+            decisionHandler(.allow)
+        }
+
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
                 guard let self = self else { return }
