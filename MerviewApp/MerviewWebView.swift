@@ -144,7 +144,8 @@ struct MerviewWebView: NSViewRepresentable {
                 let b64 = Data(content.utf8).base64EncodedString()
                 let js = """
                 (function() {
-                    var content = atob('\(b64)');
+                    var bytes = Uint8Array.from(atob('\(b64)'), function(c) { return c.charCodeAt(0); });
+                    var content = new TextDecoder('utf-8').decode(bytes);
                     window.nativeBridge.loadContent(content, '\(filename.replacingOccurrences(of: "'", with: "\\'"))');
                 })();
                 """
@@ -168,7 +169,13 @@ struct MerviewWebView: NSViewRepresentable {
                 guard let jsonData = try? JSONSerialization.data(withJSONObject: files),
                       let jsonString = String(data: jsonData, encoding: .utf8) else { return }
                 let b64 = Data(jsonString.utf8).base64EncodedString()
-                let js = "window.nativeBridge.showFileList(atob('\(b64)'));"
+                let js = """
+                (function() {
+                    var bytes = Uint8Array.from(atob('\(b64)'), function(c) { return c.charCodeAt(0); });
+                    var json = new TextDecoder('utf-8').decode(bytes);
+                    window.nativeBridge.showFileList(json);
+                })();
+                """
                 webView.evaluateJavaScript(js, completionHandler: nil)
             }
 
