@@ -13,6 +13,8 @@ sync:
 	@echo "Applying offline patches..."
 	@cd $(WEB) && patch -p1 --forward < ../../../patches/themes-offline.patch || true
 	@cd $(WEB) && patch -p1 --forward < ../../../patches/fullscreen-fixes.patch || true
+	@cd $(WEB) && patch -p1 --forward < ../../../patches/preview-fullscreen.patch || true
+	@cd $(WEB) && patch -p1 --forward < ../../../patches/layout-constraints.patch || true
 	@echo "Sync complete."
 
 ## Download vendor libraries (CDN deps bundled for offline use)

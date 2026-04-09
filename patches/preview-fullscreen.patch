@@ -1,0 +1,55 @@
+--- a/js/main.js
++++ b/js/main.js
+@@ -148,6 +148,9 @@
+     globalThis.applyPreviewBackground = applyPreviewBackground;
+     globalThis.loadCSSFromFile = loadCSSFromFile;
+     globalThis.applyCSSDirectly = applyCSSDirectly;
++
++    // Preview fullscreen
++    globalThis.togglePreviewFullscreen = togglePreviewFullscreen;
+ }
+
+ /**
+@@ -189,10 +192,42 @@
+                 selector.dispatchEvent(new MouseEvent('mousedown'));
+             }
+         }
++
++        // Shift+Cmd+F (Mac) / Shift+Ctrl+F (other) to toggle preview fullscreen
++        if (e.shiftKey && (e.metaKey || e.ctrlKey) && e.key === 'F') {
++            e.preventDefault();
++            togglePreviewFullscreen();
++        }
++
++        // Escape exits preview fullscreen
++        if (e.key === 'Escape') {
++            const container = document.querySelector('.container');
++            if (container && container.classList.contains('preview-fullscreen')) {
++                e.preventDefault();
++                togglePreviewFullscreen();
++            }
++        }
+     });
+ }
+
+ /**
++ * Toggle preview panel fullscreen mode.
++ * Hides the editor panel and resize handle, letting the preview expand
++ * to full width with comfortable reading margins (max-width: 800px).
++ */
++function togglePreviewFullscreen() {
++    const container = document.querySelector('.container');
++    if (!container) return;
++    const isFullscreen = container.classList.toggle('preview-fullscreen');
++    const btn = document.getElementById('previewFullscreenBtn');
++    if (btn) {
++        btn.title = isFullscreen
++            ? 'Exit fullscreen preview (Esc)'
++            : 'Toggle fullscreen preview (Shift+Cmd+F)';
++    }
++}
++
++/**
+  * Clean up observers and resources when page is being unloaded
+  * Prevents memory leaks and ensures proper cleanup on navigation
+  */

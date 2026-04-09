@@ -1,0 +1,36 @@
+--- a/js/themes.js
++++ b/js/themes.js
+@@ -238,10 +238,11 @@
+         wrapper.style.margin = '';
+         wrapper.style.width = '';
+     } else {
+-        // Apply overrides - user controls width via drag handle
+-        wrapper.style.maxWidth = 'none';
+-        // Don't override margin completely - preserve horizontal centering (margin: 0 auto)
+-        // Only clear vertical margins to prevent unwanted spacing
++        // Center content at a readable max-width (UX best practice: ~75ch ≈ 800px)
++        // The drag handle still controls the panel width; margins appear when the panel is wider
++        wrapper.style.maxWidth = '800px';
++        wrapper.style.marginLeft = 'auto';
++        wrapper.style.marginRight = 'auto';
+         wrapper.style.marginTop = '0';
+         wrapper.style.marginBottom = '0';
+         wrapper.style.width = 'auto';
+--- a/js/resize.js
++++ b/js/resize.js
+@@ -52,10 +52,11 @@
+     // Calculate percentage width for editor panel
+     const editorPercentage = (mouseX / containerWidth) * 100;
+
+-    // Minimum panel width in pixels
+-    const minWidth = 200;
+-    const minPercentage = (minWidth / containerWidth) * 100;
+-    const maxPercentage = 100 - minPercentage;
++    // Minimum panel widths in pixels (editor is wider to fit toolbar dropdowns)
++    const editorMinWidth = 580;
++    const previewMinWidth = 480;
++    const minPercentage = (editorMinWidth / containerWidth) * 100;
++    const maxPercentage = 100 - (previewMinWidth / containerWidth) * 100;
+
+     // Clamp the percentage to ensure both panels meet minimum width
+     const clampedPercentage = Math.max(minPercentage, Math.min(maxPercentage, editorPercentage));

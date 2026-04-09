@@ -227,10 +227,86 @@ struct MerviewWebView: NSViewRepresentable {
                 let panel = NSSavePanel()
                 panel.nameFieldStringValue = "document.pdf"
                 panel.allowedContentTypes = [UTType.pdf]
-                if panel.runModal() == .OK, let url = panel.url {
-                    webView.createPDF { result in
-                        if case .success(let data) = result {
-                            try? data.write(to: url)
+                guard panel.runModal() == .OK, let url = panel.url else { return }
+
+                // A4 in points (72 DPI): 595.28 × 841.89
+                let a4Width: CGFloat = 595.28
+                let a4Height: CGFloat = 841.89
+
+                // 1) Force-render all pending mermaid diagrams before capture
+                let renderMermaid = """
+                    if (typeof forceRenderAllMermaidDiagrams === 'function') {
+                        await forceRenderAllMermaidDiagrams();
+                    }
+                """
+
+                webView.callAsyncJavaScript(renderMermaid, arguments: [:], in: nil, in: .page) { _ in
+                    DispatchQueue.main.async {
+                        // 2) Inject print-layout CSS (createPDF ignores @media print)
+                        //    At 72 DPI: 1 CSS px = 1 PDF pt. Padding 56px ≈ 2cm (A4 standard).
+                        //    Font 11px = 11pt (standard print size).
+                        let applyPrintCSS = """
+                        (function() {
+                            var s = document.createElement('style');
+                            s.id = '_pdf_export_styles';
+                            s.textContent = '\\
+                                .toolbar, .editor-panel, .panel-header, .resize-handle, .status, .lint-panel, .native-sidebar { display: none !important; } \\
+                                .container { display: block !important; height: auto !important; } \\
+                                .preview-panel { border: none !important; width: 100% !important; } \\
+                                #preview { overflow: visible !important; background: white !important; padding: 0 !important; margin: 0 !important; max-width: none !important; } \\
+                                #wrapper { display: block !important; padding: 56px !important; max-width: none !important; margin: 0 !important; font-size: 11px !important; line-height: 1.5 !important; } \\
+                                #wrapper h1 { font-size: 22px !important; } \\
+                                #wrapper h2 { font-size: 18px !important; } \\
+                                #wrapper h3 { font-size: 15px !important; } \\
+                                #wrapper h4, #wrapper h5, #wrapper h6 { font-size: 13px !important; } \\
+                                #wrapper table { table-layout: fixed !important; width: 100% !important; word-wrap: break-word !important; overflow-wrap: break-word !important; } \\
+                                #wrapper pre, #wrapper pre code, #wrapper pre code.hljs, #wrapper .hljs { white-space: pre-wrap !important; word-break: break-all !important; overflow-wrap: break-word !important; overflow: hidden !important; max-width: 100% !important; } \\
+                                #wrapper code { word-break: break-all !important; overflow-wrap: break-word !important; } \\
+                                #wrapper .mermaid-container, #wrapper .mermaid { max-width: 100% !important; overflow: hidden !important; } \\
+                                #wrapper .mermaid svg { max-width: 100% !important; height: auto !important; } \\
+                                .mermaid, img, svg, table, blockquote, pre { page-break-inside: avoid; break-inside: avoid; } \\
+                                img, svg { max-width: 100% !important; height: auto !important; } \\
+                                #wrapper h1, #wrapper h2, #wrapper h3, #wrapper h4, #wrapper h5, #wrapper h6 { page-break-after: avoid; break-after: avoid; } \\
+                            ';
+                            document.head.appendChild(s);
+                        })();
+                        """
+
+                        let removePrintCSS = """
+                        (function() {
+                            var s = document.getElementById('_pdf_export_styles');
+                            if (s) s.remove();
+                        })();
+                        """
+
+                        webView.evaluateJavaScript(applyPrintCSS) { _, _ in
+                            DispatchQueue.main.async {
+                                // 3) Temporarily resize web view to A4 so createPDF
+                                //    produces A4-sized pages
+                                let originalFrame = webView.frame
+                                webView.translatesAutoresizingMaskIntoConstraints = true
+                                webView.frame = NSRect(
+                                    x: originalFrame.origin.x,
+                                    y: originalFrame.origin.y,
+                                    width: a4Width,
+                                    height: a4Height
+                                )
+
+                                // 4) Allow layout to settle at A4 width, then capture
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    webView.createPDF { result in
+                                        DispatchQueue.main.async {
+                                            // Restore original layout
+                                            webView.frame = originalFrame
+                                            webView.translatesAutoresizingMaskIntoConstraints = false
+                                            webView.evaluateJavaScript(removePrintCSS, completionHandler: nil)
+                                        }
+                                        if case .success(let data) = result {
+                                            try? data.write(to: url)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

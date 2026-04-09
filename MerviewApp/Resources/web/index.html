@@ -452,12 +452,65 @@
             min-height: 0;
         }
 
+        /* Preview fullscreen mode - hides editor, expands preview to full width */
+        .container.preview-fullscreen .editor-panel,
+        .container.preview-fullscreen .resize-handle {
+            display: none !important;
+        }
+
+        .container.preview-fullscreen .preview-panel {
+            border-left: none !important;
+            flex: 1 !important;
+        }
+
+        .container.preview-fullscreen #wrapper {
+            max-width: 800px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        /* Fullscreen toggle button in the preview header */
+        .preview-fullscreen-btn {
+            background: #2c3e50;
+            color: white;
+            border: 1px solid #4a6278;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            outline: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .preview-fullscreen-btn:hover {
+            background: #415b76;
+        }
+
+        .preview-fullscreen-btn:focus {
+            outline: 2px solid #3498db;
+            outline-offset: 1px;
+        }
+
+        .preview-fullscreen-btn .btn-icon {
+            font-size: 14px;
+            line-height: 1;
+        }
 
         .editor-panel, .preview-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
             min-width: 200px;
+        }
+
+        .editor-panel {
+            min-width: 580px;
+        }
+
+        .preview-panel {
+            min-width: 480px;
         }
 
         .resize-handle {
@@ -579,6 +632,14 @@
         #wrapper {
             display: block;
             padding: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #wrapper pre {
+            overflow-x: auto;
+            max-width: 100%;
         }
 
         .mermaid-container {
@@ -1351,6 +1412,7 @@
             <div class="panel-header">
                 <span>Preview</span>
                 <div class="panel-selectors">
+                    <button class="preview-fullscreen-btn" id="previewFullscreenBtn" onclick="togglePreviewFullscreen()" title="Toggle fullscreen preview (Shift+Cmd+F)"><span class="btn-icon">⛶</span></button>
                     <select class="panel-selector" id="styleSelector" onchange="changeStyle(this.value)" title="Document style">
                         <optgroup label="Preview Style">
                             <option value="">Style...</option>
@@ -1422,7 +1484,8 @@
             }
         };
 
-        // Native save: sends editor content to Swift for NSSavePanel
+        // Override web-based saveFile with native version so Cmd+S uses NSSavePanel
+        // instead of blob download (which shows raw source in WKWebView)
         function nativeSaveFile() {
             var content = '';
             var filename = 'untitled.md';
@@ -1437,6 +1500,17 @@
         function nativeSavePDF() {
             window.webkit.messageHandlers.nativeApp.postMessage(JSON.stringify({action: 'savePDF'}));
         }
+
+        // Intercept Cmd+S in capture phase before the module's keydown handler
+        // fires. This prevents the web-based saveFile/downloadFile (which breaks
+        // WKWebView by navigating to a blob: URL) and uses NSSavePanel instead.
+        document.addEventListener('keydown', function(e) {
+            if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                nativeSaveFile();
+            }
+        }, true);
     </script>
 </body>
 </html>
